@@ -58,7 +58,7 @@ ui <- navbarPage(title = dinfo[[1]][[3]][[1]],
                               radioButtons(inputId="Study_cox", label="Study", choices= label.dinfo, inline = T),
                               radioButtons("mat_cox", "Data type", choices = c("Original", "Matching"), selected = "Matching", inline = T),
                               radioButtons("dep_cox", "Outcome", choices = c('Event'), selected = "Event", inline = T),
-                              selectInput("cov_cox", "Covariate", choices = setdiff(names(list.dinfo[[1]][[1]]), c("Event", "Day", "ps")), selected = "EXPCON", multiple = T)
+                              selectInput("cov_cox", "Covariate", choices = setdiff(names(dinfo[[1]][[1]]), c("Event", "Day", "ps")), selected = "EXPCON", multiple = T)
                             ),
                             mainPanel(
                               withLoader(DTOutput("tablecox"), type="html", loader="loader6")

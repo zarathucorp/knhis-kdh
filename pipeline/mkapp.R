@@ -51,16 +51,19 @@ matchfun <- function(filedir = "/home/whe/period30", filenames = list.files("/ho
     ## washout 
     data <- dlist.original[[i]][Day > wo]
     
-    data$CCI <- as.integer(as.character(data$CCI))
+    data[, CCI := as.integer(as.character(CCI))]
     
     ## Redefine EXPCON: 0, 1 중 갯수 작은 것을 0으로: 매칭하려면 Case <= Control 이어야 함.
-    data$EXPCON2 <- as.integer(as.character(data$EXPCON))
+    data[, EXPCON2 := as.integer(as.character(EXPCON))]
     if (data[, diff(table(EXPCON)) > 0]){
-      data$EXPCON2 <- 1 - as.integer(as.character(data$EXPCON))
+      data[, EXPCON2 <- 1 - as.integer(as.character(EXPCON))]
     }
-    
     ## Formula & logistic regression for matching
-    form <- paste0("EXPCON2 ~ SEX + CCI + ", paste(setdiff(varlist, c("SEX", "CCI", "EXPCON")), collapse = " + "))
+    vars.indep <- setdiff(varlist, "EXPCON")
+    ## Remove variables with only 1 level.
+    vars.indep <- vars.indep[sapply(data[, ..vars.indep], function(x) length(setdiff(unique(x), NA))) > 1]
+    
+    form <- paste0("EXPCON2 ~ ", paste(vars.indep, collapse = " + "))
     modelps <- glm(as.formula(form), data = data, family = binomial)
     
     ## Run matching with `Match1` function
@@ -100,8 +103,12 @@ matchfun <- function(filedir = "/home/whe/period30", filenames = list.files("/ho
     label[variable == "AMILALEMNOS", `:=`(var_label = "Previous Any malignancy except skin", val_label = c("No", "Yes"))]
     label[variable == "MOSLD", `:=`(var_label = "Previous Moderate or severe liver disease", val_label = c("No", "Yes"))]
     label[variable == "MST", `:=`(var_label = "Previous Metastatic solid tumor", val_label = c("No", "Yes"))]
-    label[variable == "AH", `:=`(var_label = "Previous AIDS/HIV", val_label = c("No", "Yes"))]
-    
+    label[variable == "AH", `:=`(var_label = "Previous AIDS/HIV")]
+    if (nrow(label[variable == "AH"]) == 2){
+      label[variable == "AH", val_label := c("No", "Yes")]
+    } else{
+      label[variable == "AH", val_label := "No"]
+    }
     
     
     return(list(original = data[, -c("EXPCON2")], mat = data[c(rr$index.treated, rr$index.control), -c("EXPCON2")], 
@@ -142,13 +149,14 @@ for (oc in c("dementia", "vasculardementia", "cerebralinfarction", "osteoporosis
   
   
   ## Make shiny app folder
-  dir.create(paste0("/home/js/ShinyApps/", oc, "_v2"))
+  dir.create(paste0("/home/js/ShinyApps/", oc, "_v2"), showWarnings = F)
   
   ## Copy app.R 
-  file.copy("/home/js/ShinyApps/app.R", paste0("/home/js/ShinyApps/", oc, "_v2/", "app.R"))
+  file.copy("/home/js/ShinyApps/app.R", paste0("/home/js/ShinyApps/", oc, "_v2/", "app.R"), overwrite  = T)
   
   saveRDS(dinfo, paste0("/home/js/ShinyApps/", oc, "_v2/", "dinfo.RDS"))
   saveRDS(list.tb1, paste0("/home/js/ShinyApps/", oc, "_v2/", "tb1.RDS"))
+  print(paste0(oc, " end"))
 }
 
 
